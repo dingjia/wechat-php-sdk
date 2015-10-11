@@ -106,7 +106,6 @@ class Wechat
 	const MASS_QUERY_URL = '/message/mass/get?';
 	const UPLOAD_MEDIA_URL = 'http://file.api.weixin.qq.com/cgi-bin';
 	const MEDIA_UPLOAD_URL = '/media/upload?';
-	const MEDIA_UPLOADIMG_URL = '/media/uploadimg?';//图片上传接口
 	const MEDIA_GET_URL = '/media/get?';
 	const MEDIA_VIDEO_UPLOAD = '/media/uploadvideo?';
     const MEDIA_FOREVER_UPLOAD_URL = '/material/add_material?';
@@ -145,6 +144,7 @@ class Wechat
 	const CARD_GET                        = '/card/get?';
 	const CARD_BATCHGET                   = '/card/batchget?';
 	const CARD_MODIFY_STOCK               = '/card/modifystock?';
+	const CARD_USER_GETCARDLIST           ='/card/user/getcardlist?';     //用于获取用户卡包里的，属于该appid下的卡券。
 	const CARD_LOCATION_BATCHADD          = '/card/location/batchadd?';
 	const CARD_LOCATION_BATCHGET          = '/card/location/batchget?';
 	const CARD_GETCOLORS                  = '/card/getcolors?';
@@ -806,6 +806,34 @@ class Wechat
 	        return false;
 	    }
 	}
+
+
+	  /**
+     * 获取关注者拥有的卡券
+     * @param string $openid
+     * @param string $card_id
+     * @return boolean|array    
+     */
+    public function getUserCard($openid,$card_id="") {
+        $data = array(
+        	'openid' => $openid,
+            'card_id' => $card_id
+        );
+        if (!$this->access_token && !$this->checkAuth()) return false;
+        $result = $this->http_post(self::API_BASE_URL_PREFIX . self::CARD_USER_GETCARDLIST . 'access_token=' . $this->access_token, self::json_encode($data));
+        if ($result) {
+            $json = json_decode($result, true);
+            if (!$json || !empty($json['errcode'])) {
+                $this->errCode = $json['errcode'];
+                $this->errMsg  = $json['errmsg'];
+                return false;
+            }
+            return $json;
+        }
+        return false;
+    }
+
+	
 
 	public static function xmlSafeStr($str)
 	{
@@ -1552,31 +1580,6 @@ class Wechat
                 }
             }
 			return $result;
-		}
-		return false;
-	}
-
-	/**
-	 * 上传图片，本接口所上传的图片不占用公众号的素材库中图片数量的5000个的限制。图片仅支持jpg/png格式，大小必须在1MB以下。 (认证后的订阅号可用)
-	 * 注意：上传大文件时可能需要先调用 set_time_limit(0) 避免超时
-	 * 注意：数组的键值任意，但文件名前必须加@，使用单引号以避免本地路径斜杠被转义      
-	 * @param array $data {"media":'@Path\filename.jpg'}
-	 * 
-	 * @return boolean|array
-	 */
-	public function uploadImg($data){
-		if (!$this->access_token && !$this->checkAuth()) return false;
-		//原先的上传多媒体文件接口使用 self::UPLOAD_MEDIA_URL 前缀
-		$result = $this->http_post(self::API_URL_PREFIX.self::MEDIA_UPLOADIMG_URL.'access_token='.$this->access_token,$data,true);
-		if ($result)
-		{
-			$json = json_decode($result,true);
-			if (!$json || !empty($json['errcode'])) {
-				$this->errCode = $json['errcode'];
-				$this->errMsg = $json['errmsg'];
-				return false;
-			}
-			return $json;
 		}
 		return false;
 	}
