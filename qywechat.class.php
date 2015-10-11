@@ -16,7 +16,8 @@
  *		);
  *
  */
-class Wechat
+
+class qyWechat
 {
     const MSGTYPE_TEXT 		= 'text';
     const MSGTYPE_IMAGE 	= 'image';
@@ -331,7 +332,7 @@ class Wechat
         	    return false;
         	}
         }
-        $pc = new Prpcrypt($this->encodingAesKey);
+        $pc = new qyPrpcrypt($this->encodingAesKey);
         $array = $pc->decrypt($encryptStr,$this->appid);
         if (!isset($array[0]) || ($array[0] != 0)) {
             if (!$return) {
@@ -794,7 +795,7 @@ class Wechat
 			$msg = $this->_msg;
 		$xmldata=  $this->xml_encode($msg);
 		$this->log($xmldata);
-		$pc = new Prpcrypt($this->encodingAesKey);
+		$pc = new qyPrpcrypt($this->encodingAesKey);
 		$array = $pc->encrypt($xmldata, $this->appid);
 		$ret = $array[0];
 		if ($ret != 0) {
@@ -2032,11 +2033,11 @@ class Wechat
 
 
 /**
- * PKCS7Encoder class
+ * qyPKCS7Encoder class
  *
  * 提供基于PKCS7算法的加解密接口.
  */
-class PKCS7Encoder
+class qyPKCS7Encoder
 {
     public static $block_size = 32;
 
@@ -2047,12 +2048,12 @@ class PKCS7Encoder
      */
     function encode($text)
     {
-        $block_size = PKCS7Encoder::$block_size;
+        $block_size = qyPKCS7Encoder::$block_size;
         $text_length = strlen($text);
         //计算需要填充的位数
-        $amount_to_pad = PKCS7Encoder::$block_size - ($text_length % PKCS7Encoder::$block_size);
+        $amount_to_pad = qyPKCS7Encoder::$block_size - ($text_length % qyPKCS7Encoder::$block_size);
         if ($amount_to_pad == 0) {
-            $amount_to_pad = PKCS7Encoder::block_size;
+            $amount_to_pad = qyPKCS7Encoder::block_size;
         }
         //获得补位所用的字符
         $pad_chr = chr($amount_to_pad);
@@ -2072,7 +2073,7 @@ class PKCS7Encoder
     {
 
         $pad = ord(substr($text, -1));
-        if ($pad < 1 || $pad > PKCS7Encoder::$block_size) {
+        if ($pad < 1 || $pad > qyPKCS7Encoder::$block_size) {
             $pad = 0;
         }
         return substr($text, 0, (strlen($text) - $pad));
@@ -2085,7 +2086,7 @@ class PKCS7Encoder
  *
  * 提供接收和推送给公众平台消息的加解密接口.
  */
-class Prpcrypt
+class qyPrpcrypt
 {
     public $key;
 
@@ -2118,7 +2119,7 @@ class Prpcrypt
             $module = mcrypt_module_open(MCRYPT_RIJNDAEL_128, '', MCRYPT_MODE_CBC, '');
             $iv = substr($this->key, 0, 16);
             //使用自定义的填充方式对明文进行补位填充
-            $pkc_encoder = new PKCS7Encoder;
+            $pkc_encoder = new qyPKCS7Encoder;
             $text = $pkc_encoder->encode($text);
             mcrypt_generic_init($module, $this->key, $iv);
             //加密
@@ -2128,10 +2129,10 @@ class Prpcrypt
 
             //			print(base64_encode($encrypted));
             //使用BASE64对加密后的字符串进行编码
-            return array(ErrorCode::$OK, base64_encode($encrypted));
+            return array(qyErrorCode::$OK, base64_encode($encrypted));
         } catch (Exception $e) {
             //print $e;
-            return array(ErrorCode::$EncryptAESError, null);
+            return array(qyErrorCode::$EncryptAESError, null);
         }
     }
 
@@ -2154,13 +2155,13 @@ class Prpcrypt
             mcrypt_generic_deinit($module);
             mcrypt_module_close($module);
         } catch (Exception $e) {
-            return array(ErrorCode::$DecryptAESError, null);
+            return array(qyErrorCode::$DecryptAESError, null);
         }
 
 
         try {
             //去除补位字符
-            $pkc_encoder = new PKCS7Encoder;
+            $pkc_encoder = new qyPKCS7Encoder;
             $result = $pkc_encoder->decode($decrypted);
             //去除16位随机字符串,网络字节序和AppId
             if (strlen($result) < 16)
@@ -2172,10 +2173,10 @@ class Prpcrypt
             $from_appid = substr($content, $xml_len + 4);
         } catch (Exception $e) {
             //print $e;
-            return array(ErrorCode::$IllegalBuffer, null);
+            return array(qyErrorCode::$IllegalBuffer, null);
         }
         if ($from_appid != $appid)
-            return array(ErrorCode::$ValidateAppidError, null);
+            return array(qyErrorCode::$ValidateAppidError, null);
         return array(0, $xml_content);
 
     }
@@ -2203,7 +2204,7 @@ class Prpcrypt
  * error code
  * 仅用作类内部使用，不用于官方API接口的errCode码
  */
-class ErrorCode
+class qyErrorCode
 {
     public static $OK = 0;
     public static $ValidateSignatureError = 40001;
